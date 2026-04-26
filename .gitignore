@@ -1,0 +1,29 @@
+# Berkas Sistem Operasi
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Folder IDE/Editor (VS Code, JetBrains, dll)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependensi (Node.js, Python, Vendor)
+node_modules/
+/vendor
+venv/
+env/
+__pycache__/
+
+# Berkas Konfigurasi/Lingkungan (Penting!)
+.env
+.env.local
+.env.*.local
+*.log
+
+# Build Outputs
+dist/
+build/
+bin/
+obj/
