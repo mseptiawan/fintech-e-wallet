@@ -1,64 +1,57 @@
 import jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { success } from '../../shared/utils/response';
 import { AppError } from '../../shared/errors/app-error';
-import { registerSchema } from '../../shared/validators/auth.validator';
-import { loginSchema } from '../../shared/validators/auth.validator';
+import {
+  registerSchema,
+  loginSchema,
+} from '../../shared/validators/auth.validator';
+import { RegisterUseCase } from '../../application/usecases/auth/register.usecase';
+import { LoginUseCase } from '../../application/usecases/auth/login.usecase';
+import { asyncHandler } from '../../shared/utils/async-handler'; // ✅ IMPORT
+
 export class AuthController {
   constructor(
-    private registerUC: any,
-    private loginUC: any,
+    private registerUC: RegisterUseCase,
+    private loginUC: LoginUseCase,
   ) {}
 
-  register = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const parsed = registerSchema.parse(req.body); // 🔥 VALIDATION HERE
+  register = asyncHandler(async (req: Request, res: Response) => {
+    const parsed = registerSchema.parse(req.body);
 
-      const user = await this.registerUC.execute(parsed);
+    const user = await this.registerUC.execute(parsed);
 
-      return success(res, user, 'Register success', 201);
-    } catch (err) {
-      next(err);
+    const { password, ...safeUser } = user;
+
+    return success(res, safeUser, 'Register success', 201);
+  });
+
+  login = asyncHandler(async (req: Request, res: Response) => {
+    const parsed = loginSchema.parse(req.body);
+
+    const result = await this.loginUC.execute(parsed.username, parsed.password);
+
+    return success(res, result, 'Login success', 200);
+  });
+
+  refresh = asyncHandler(async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      throw new AppError('Refresh token required', 401);
     }
-  };
 
-  login = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const parsed = loginSchema.parse(req.body); // 🔥 VALIDATION HERE
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET!,
+    ) as any;
 
-      const result = await this.loginUC.execute(
-        parsed.username,
-        parsed.password,
-      );
+    const newAccessToken = jwt.sign(
+      { userId: decoded.userId, role: decoded.role },
+      process.env.JWT_ACCESS_SECRET!,
+      { expiresIn: '15m' },
+    );
 
-      return success(res, result, 'Login success', 200);
-    } catch (err) {
-      next(err);
-    }
-  };
-
-  refresh = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { refreshToken } = req.body;
-
-      if (!refreshToken) {
-        throw new AppError('Refresh token required', 401);
-      }
-
-      const decoded = jwt.verify(
-        refreshToken,
-        process.env.JWT_REFRESH_SECRET!,
-      ) as any;
-
-      const newAccessToken = jwt.sign(
-        { userId: decoded.userId },
-        process.env.JWT_ACCESS_SECRET!,
-        { expiresIn: '15m' },
-      );
-
-      return success(res, { accessToken: newAccessToken }, 'Token refreshed');
-    } catch (err) {
-      next(new AppError('Invalid refresh token', 401));
-    }
-  };
+    return success(res, { accessToken: newAccessToken }, 'Token refreshed');
+  });
 }

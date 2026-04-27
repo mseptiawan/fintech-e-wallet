@@ -26,7 +26,7 @@ export class LoginUseCase {
     );
 
     const refreshToken = jwt.sign(
-      { userId: user.id },
+      { userId: user.id, role: user.role }, // ✅ tambahin role
       process.env.JWT_REFRESH_SECRET!,
       { expiresIn: '7d' },
     );
