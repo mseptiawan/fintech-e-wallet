@@ -1,18 +1,22 @@
-import { RegisterUseCase } from "../../application/usecases/auth/register.usecase";
-import { LoginUseCase } from "../../application/usecases/auth/login.usecase";
-import { Request, Response, NextFunction } from "express";
-import { success } from "../../shared/utils/response";
+import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from 'express';
+import { success } from '../../shared/utils/response';
+import { AppError } from '../../shared/errors/app-error';
+import { registerSchema } from '../../shared/validators/auth.validator';
+import { loginSchema } from '../../shared/validators/auth.validator';
 export class AuthController {
   constructor(
-    private registerUC: RegisterUseCase,
-    private loginUC: LoginUseCase,
+    private registerUC: any,
+    private loginUC: any,
   ) {}
 
   register = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const user = await this.registerUC.execute(req.body);
+      const parsed = registerSchema.parse(req.body); // 🔥 VALIDATION HERE
 
-      return success(res, user, "Register success", 201);
+      const user = await this.registerUC.execute(parsed);
+
+      return success(res, user, 'Register success', 201);
     } catch (err) {
       next(err);
     }
@@ -20,13 +24,41 @@ export class AuthController {
 
   login = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const parsed = loginSchema.parse(req.body); // 🔥 VALIDATION HERE
+
       const result = await this.loginUC.execute(
-        req.body.username,
-        req.body.password,
+        parsed.username,
+        parsed.password,
       );
-      return success(res, result, "Login success", 200);
+
+      return success(res, result, 'Login success', 200);
     } catch (err) {
       next(err);
+    }
+  };
+
+  refresh = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { refreshToken } = req.body;
+
+      if (!refreshToken) {
+        throw new AppError('Refresh token required', 401);
+      }
+
+      const decoded = jwt.verify(
+        refreshToken,
+        process.env.JWT_REFRESH_SECRET!,
+      ) as any;
+
+      const newAccessToken = jwt.sign(
+        { userId: decoded.userId },
+        process.env.JWT_ACCESS_SECRET!,
+        { expiresIn: '15m' },
+      );
+
+      return success(res, { accessToken: newAccessToken }, 'Token refreshed');
+    } catch (err) {
+      next(new AppError('Invalid refresh token', 401));
     }
   };
 }

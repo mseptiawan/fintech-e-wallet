@@ -1,9 +1,10 @@
-import { Router } from 'express'
+import { Router } from 'express';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 export const walletRoutes = (controller: any) => {
-  const router = Router()
+  const router = Router();
 
-  router.get('/', controller.getWallet)
+  router.get('/me', controller.getWallet);
 
-  return router
-}
+  return router;
+};

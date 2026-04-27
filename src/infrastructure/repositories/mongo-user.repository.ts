@@ -1,12 +1,12 @@
-import { UserRepository } from "../../domain/repositories/user.repository";
-import { User } from "../../domain/entities/user.entity";
-import { UserModel } from "../models/user.model";
-import { v4 as uuid } from "uuid";
+import { UserRepository } from '../../domain/repositories/user.repository';
+import { User } from '../../domain/entities/user.entity';
+import { UserModel } from '../models/user.model';
+import { v4 as uuid } from 'uuid';
 
 export class MongoUserRepository implements UserRepository {
   async create(user: User): Promise<User> {
     const created = await UserModel.create({
-      id: user.id ?? uuid(),
+      id: user.id,
       username: user.username,
       email: user.email,
       password: user.password,
