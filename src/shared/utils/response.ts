@@ -1,44 +1,36 @@
 import { Response } from "express";
 
-type ApiResponse<T> = {
-  status: "success" | "fail" | "error";
-  message: string;
-  data?: T | null;
-};
-
-export function success<T>(
+export const success = (
   res: Response,
-  data: T | null = null,
+  data: any = null,
   message: string = "success",
   statusCode: number = 200,
-): Response {
-  const payload: ApiResponse<T> = {
+) => {
+  return res.status(statusCode).json({
     status: "success",
     message,
     data,
-  };
+  });
+};
 
-  return res.status(statusCode).json(payload);
-}
-
-export function fail(
+export const fail = (
   res: Response,
   message: string = "fail",
   statusCode: number = 400,
-): Response {
+) => {
   return res.status(statusCode).json({
     status: "fail",
     message,
   });
-}
+};
 
-export function sendError(
+export const error = (
   res: Response,
   message: string = "error",
   statusCode: number = 500,
-): Response {
+) => {
   return res.status(statusCode).json({
     status: "error",
     message,
   });
-}
+};
